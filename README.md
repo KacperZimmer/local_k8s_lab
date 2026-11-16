@@ -90,9 +90,14 @@ flowchart TD
     - 2 independent Private Route Tables routing `0.0.0.0/0` to each respective AZ's NAT Gateway.
 
 ### 2. Kubernetes Cluster (`modules/eks`)
-- **EKS Cluster**: Cluster named `dev-01`.
-- **IAM Role**: `eks-cluster-role` with `sts:AssumeRole` trusted for `eks.amazonaws.com` and managed policy attachment `AmazonEKSClusterPolicy`.
-- **Subnet Association**: Connected across subnets to support high-availability master and worker node communication.
+- **EKS Cluster**: Configurable cluster name (defaults to `dev-01`).
+- **Control Plane IAM Role**: `eks-cluster-role` with `sts:AssumeRole` trusted for `eks.amazonaws.com` and policy attachment `AmazonEKSClusterPolicy`.
+- **Worker Node Group**: `aws_eks_node_group` running on configurable instance types (default `t3.micro`) with auto-scaling configuration (`desired_size`, `max_size`, `min_size`).
+- **Worker Nodes IAM Role**: `eks-worker-role` with `sts:AssumeRole` trusted for `ec2.amazonaws.com` and policies:
+  - `AmazonEKSWorkerNodePolicy`
+  - `AmazonEKS_CNI_Policy`
+  - `AmazonEC2ContainerRegistryReadOnly`
+- **Subnet Association**: Connected across private subnets for secure node execution and high-availability master communication.
 
 ---
 
@@ -100,9 +105,9 @@ flowchart TD
 
 ```text
 .
-├── main.tf                 # Root module invoking child modules
+├── main.tf                 # Root module invoking VPC and EKS child modules
 ├── variables.tf            # Input variable declarations
-├── outputs.tf              # Root outputs (VPC ID, Subnet IDs)
+├── outputs.tf              # Root outputs (VPC ID, Subnets, EKS Cluster)
 ├── provider.tf             # AWS Provider configuration
 ├── dev_values.tfvars       # Environment variables for dev
 └── modules/
@@ -110,9 +115,10 @@ flowchart TD
     │   ├── main.tf
     │   ├── variables.tf
     │   └── outputs.tf
-    └── eks/                # EKS cluster and IAM role definitions
+    └── eks/                # EKS cluster, node groups, and IAM roles
         ├── main.tf
-        └── variables.tf
+        ├── variables.tf
+        └── outputs.tf
 ```
 
 ---
